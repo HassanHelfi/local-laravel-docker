@@ -1,0 +1,64 @@
+version: '3'
+
+networks:
+  laravel:
+
+services:
+  nginx:
+    image: nginx:stable-alpine
+    container_name: nginx
+    ports:
+      - "8088:80"
+      - "443:443"
+    volumes:
+      - ./src:/var/www/html
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - php
+      - mysql
+    networks:
+      - laravel
+
+  php:
+    build:
+      args:
+        user: sammy
+        uid: 1000
+      context: .
+      dockerfile: Dockerfile
+    container_name: php
+    working_dir: /var/www/html
+    volumes:
+      - ./src:/var/www/html
+    ports:
+      - "9000:9000"
+    networks:
+      - laravel
+
+  mysql:
+    image: mysql:5.7
+    restart: always
+    ports:
+      - "4306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: myUserPass
+      MYSQL_DATABASE: test_db
+      MYSQL_USER: myUser
+      MYSQL_PASSWORD: myUser
+    volumes:
+      - ./mysql:/var/lib/mysql
+    networks:
+      - laravel
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    restart: always
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: root
+      PMA_PASSWORD: root
+      UPLOAD_LIMIT: 300M
+    ports:
+      - "8089:80"
+    networks:
+      - laravel
